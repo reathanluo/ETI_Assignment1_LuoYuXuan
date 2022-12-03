@@ -23,7 +23,7 @@ type Passenger struct {
 }
 
 type Driver struct {
-	DriverID  string `json:"DriverId"`
+	// DriverID  string `json:"DriverId"`
 	FirstName string `json:"FirstName"`
 	LastName  string `json:"LastName"`
 	PhoneNo   string `json:"PhoneNo"`
@@ -32,12 +32,18 @@ type Driver struct {
 	Password  string `json:"Password"`
 }
 
+type passengerTrip struct {
+	// PassengerID string `json:"PassengerId"`
+	StartPostal string `json:"StartPostal"`
+	EndPostal   string `json:"EndPostal"`
+}
+
 func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/api/v1/passengers", createPassengers).Methods("POST", "PATCH")
-	router.HandleFunc("/api/v1/drivers", createDrivers).Methods("POST", "PATCH")
 	router.HandleFunc("/api/v1/passengers/{id}", updatePassengers).Methods("GET", "PATCH")
-	router.HandleFunc("/api/v1/drivers/{id}", updateDrivers).Methods("GET", "PATCH")
+	router.HandleFunc("/api/v1/drivers/{id}", driverInfo).Methods("POST", "PATCH")
+	router.HandleFunc("/api/v1/trips/{passengerID}", createTrips).Methods("POST", "PATCH")
 
 	fmt.Println("Listening at port 5001")
 	log.Fatal(http.ListenAndServe(":5001", router))
@@ -62,24 +68,27 @@ func createPassengers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func createDrivers(w http.ResponseWriter, r *http.Request) {
+func createTrips(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
 	if r.Method == "POST" {
 		if reqBody, err := ioutil.ReadAll(r.Body); err == nil {
-			var driver Driver
-			if err := json.Unmarshal(reqBody, &driver); err == nil {
-				insertDriver(driver)
-				w.WriteHeader(http.StatusCreated)
+			var trip passengerTrip
+			if err := json.Unmarshal(reqBody, &trip); err == nil {
+				if _, ok := isPassengerExist(params["passengerID"]); ok {
+					createTripForPassenger(params["passengerID"], trip)
+					w.WriteHeader(http.StatusCreated)
+				} else {
+					w.WriteHeader(http.StatusBadRequest)
+				}
 			} else {
+				fmt.Println(err)
 				w.WriteHeader(http.StatusBadRequest)
 			}
-		} else {
-			fmt.Println(err)
-			w.WriteHeader(http.StatusBadRequest)
 		}
 	}
 }
 
-func updateDrivers(w http.ResponseWriter, r *http.Request) {
+func driverInfo(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	if r.Method == "PATCH" {
 		if reqBody, err := ioutil.ReadAll(r.Body); err == nil {
@@ -107,6 +116,22 @@ func updateDrivers(w http.ResponseWriter, r *http.Request) {
 					w.WriteHeader(http.StatusAccepted)
 				} else {
 					w.WriteHeader(http.StatusNotFound)
+				}
+			} else {
+				fmt.Println(err)
+				w.WriteHeader(http.StatusBadRequest)
+			}
+		}
+	} else if r.Method == "POST" {
+		if resBody, err := ioutil.ReadAll(r.Body); err == nil {
+			var driver Driver
+			if err := json.Unmarshal(resBody, &driver); err == nil {
+				if _, ok := isDriverExist(params["id"]); !ok {
+					insertDriver(params["id"], driver)
+					w.WriteHeader(http.StatusAccepted)
+				} else {
+					w.WriteHeader(http.StatusConflict)
+					fmt.Println("Driver already exist")
 				}
 			} else {
 				fmt.Println(err)
@@ -169,7 +194,7 @@ func insertPassenger(passenger Passenger) {
 	}
 }
 
-func insertDriver(driver Driver) {
+func insertDriver(id string, driver Driver) {
 	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3307)/trip_db")
 	if err != nil {
 		panic(err.Error())
@@ -177,7 +202,7 @@ func insertDriver(driver Driver) {
 	defer db.Close()
 
 	// Insert the driver
-	_, err = db.Exec("INSERT INTO driver (DriverID, FirstName, LastName, PhoneNo, Email, LicenseNo, Password) VALUES (?,?,?,?,?,?,?)", driver.DriverID, driver.FirstName, driver.LastName, driver.PhoneNo, driver.Email, driver.LicenseNo, driver.Password)
+	_, err = db.Exec("INSERT INTO driver (DriverID, FirstName, LastName, PhoneNo, Email, LicenseNo, Password) VALUES (?,?,?,?,?,?,?)", id, driver.FirstName, driver.LastName, driver.PhoneNo, driver.Email, driver.LicenseNo, driver.Password)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -213,6 +238,21 @@ func updatePassenger(id string, passenger Passenger) {
 	}
 }
 
+func createTripForPassenger(id string, trip passengerTrip) {
+	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3307)/trip_db")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer db.Close()
+
+	// Insert the trip
+	pid, _ := strconv.Atoi(id)
+	_, err = db.Exec("INSERT INTO trip (PassengerID, StartPostal, EndPostal) VALUES (?,?,?)", pid, trip.StartPostal, trip.EndPostal)
+	if err != nil {
+		panic(err.Error())
+	}
+}
+
 func isDriverExist(id string) (Driver, bool) {
 	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3307)/trip_db")
 	if err != nil {
@@ -220,11 +260,10 @@ func isDriverExist(id string) (Driver, bool) {
 	}
 	defer db.Close()
 
-	results := db.QueryRow("SELECT DriverID,FirstName,LastName,PhoneNo,Email,LicenseNo,Password FROM driver WHERE DriverID = ?", id)
+	results := db.QueryRow("SELECT FirstName,LastName,PhoneNo,Email,LicenseNo,Password FROM driver WHERE DriverID = ?", id)
 	var driver Driver
-	err = results.Scan(&driver.DriverID, &driver.FirstName, &driver.LastName, &driver.PhoneNo, &driver.Email, &driver.LicenseNo, &driver.Password)
+	err = results.Scan(&driver.FirstName, &driver.LastName, &driver.PhoneNo, &driver.Email, &driver.LicenseNo, &driver.Password)
 	if err != nil {
-		fmt.Println(err)
 		return Driver{}, false
 	}
 	return driver, true
