@@ -35,6 +35,8 @@ func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/api/v1/passengers", passengers).Methods("POST", "PATCH")
 	router.HandleFunc("/api/v1/drivers", drivers).Methods("POST", "PATCH")
+	// router.HandleFunc("/api/v1/passengers/{id}", updatePassengers).Methods("GET", "PATCH")
+	router.HandleFunc("/api/v1/drivers/{id}", updateDrivers).Methods("GET", "PATCH")
 
 	fmt.Println("Listening at port 5001")
 	log.Fatal(http.ListenAndServe(":5001", router))
@@ -76,6 +78,43 @@ func drivers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func updateDrivers(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	if r.Method == "PATCH" {
+		if reqBody, err := ioutil.ReadAll(r.Body); err == nil {
+			var driver map[string]interface{}
+			if err := json.Unmarshal(reqBody, &driver); err == nil {
+				if orig, ok := isExist(params["id"]); ok {
+					fmt.Println(driver)
+					for key, value := range driver {
+						switch key {
+						case "FirstName":
+							orig.FirstName = value.(string)
+						case "LastName":
+							orig.LastName = value.(string)
+						case "PhoneNo":
+							orig.PhoneNo = value.(string)
+						case "Email":
+							orig.Email = value.(string)
+						case "LicenseNo":
+							orig.LicenseNo = value.(string)
+						case "Password":
+							orig.Password = value.(string)
+						}
+					}
+					updateDriver(params["id"], orig)
+					w.WriteHeader(http.StatusAccepted)
+				} else {
+					w.WriteHeader(http.StatusNotFound)
+				}
+			} else {
+				fmt.Println(err)
+				w.WriteHeader(http.StatusBadRequest)
+			}
+		}
+	}
+}
+
 func insertPassenger(passenger Passenger) {
 	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3307)/trip_db")
 	if err != nil {
@@ -102,4 +141,35 @@ func insertDriver(driver Driver) {
 	if err != nil {
 		panic(err.Error())
 	}
+}
+
+func updateDriver(id string, driver Driver) {
+	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3307)/trip_db")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer db.Close()
+
+	// Update the driver
+	_, err = db.Exec("UPDATE driver SET FirstName=?, LastName=?, PhoneNo=?, Email=?, LicenseNo=?, Password=? WHERE DriverID=?", driver.FirstName, driver.LastName, driver.PhoneNo, driver.Email, driver.LicenseNo, driver.Password, id)
+	if err != nil {
+		panic(err.Error())
+	}
+}
+
+func isExist(id string) (Driver, bool) {
+	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3307)/trip_db")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer db.Close()
+
+	results := db.QueryRow("SELECT DriverID,FirstName,LastName,PhoneNo,Email,LicenseNo,Password FROM driver WHERE DriverID = ?", id)
+	var driver Driver
+	err = results.Scan(&driver.DriverID, &driver.FirstName, &driver.LastName, &driver.PhoneNo, &driver.Email, &driver.LicenseNo, &driver.Password)
+	if err != nil {
+		fmt.Println(err)
+		return Driver{}, false
+	}
+	return driver, true
 }
