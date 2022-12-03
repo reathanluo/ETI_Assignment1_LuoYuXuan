@@ -21,9 +21,21 @@ type Passenger struct {
 	Password  string `json:"Password"`
 }
 
+type Driver struct {
+	DriverID  string `json:"DriverId"`
+	FirstName string `json:"FirstName"`
+	LastName  string `json:"LastName"`
+	PhoneNo   string `json:"PhoneNo"`
+	Email     string `json:"Email"`
+	LicenseNo string `json:"LicenseNo"`
+	Password  string `json:"Password"`
+}
+
 func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/api/v1/passengers", passengers).Methods("POST", "PATCH")
+	router.HandleFunc("/api/v1/drivers", drivers).Methods("POST", "PATCH")
+
 	fmt.Println("Listening at port 5001")
 	log.Fatal(http.ListenAndServe(":5001", router))
 }
@@ -47,6 +59,23 @@ func passengers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func drivers(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		if reqBody, err := ioutil.ReadAll(r.Body); err == nil {
+			var driver Driver
+			if err := json.Unmarshal(reqBody, &driver); err == nil {
+				insertDriver(driver)
+				w.WriteHeader(http.StatusCreated)
+			} else {
+				w.WriteHeader(http.StatusBadRequest)
+			}
+		} else {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusBadRequest)
+		}
+	}
+}
+
 func insertPassenger(passenger Passenger) {
 	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3307)/trip_db")
 	if err != nil {
@@ -56,6 +85,20 @@ func insertPassenger(passenger Passenger) {
 
 	// Insert the passenger
 	_, err = db.Exec("INSERT INTO passenger (FirstName, LastName, PhoneNo, Email, Password) VALUES (?,?,?,?,?)", passenger.FirstName, passenger.LastName, passenger.PhoneNo, passenger.Email, passenger.Password)
+	if err != nil {
+		panic(err.Error())
+	}
+}
+
+func insertDriver(driver Driver) {
+	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3307)/trip_db")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer db.Close()
+
+	// Insert the driver
+	_, err = db.Exec("INSERT INTO driver (DriverID, FirstName, LastName, PhoneNo, Email, LicenseNo, Password) VALUES (?,?,?,?,?,?,?)", driver.DriverID, driver.FirstName, driver.LastName, driver.PhoneNo, driver.Email, driver.LicenseNo, driver.Password)
 	if err != nil {
 		panic(err.Error())
 	}
