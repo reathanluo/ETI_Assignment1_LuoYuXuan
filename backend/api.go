@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
 
@@ -33,16 +34,16 @@ type Driver struct {
 
 func main() {
 	router := mux.NewRouter()
-	router.HandleFunc("/api/v1/passengers", passengers).Methods("POST", "PATCH")
-	router.HandleFunc("/api/v1/drivers", drivers).Methods("POST", "PATCH")
-	// router.HandleFunc("/api/v1/passengers/{id}", updatePassengers).Methods("GET", "PATCH")
+	router.HandleFunc("/api/v1/passengers", createPassengers).Methods("POST", "PATCH")
+	router.HandleFunc("/api/v1/drivers", createDrivers).Methods("POST", "PATCH")
+	router.HandleFunc("/api/v1/passengers/{id}", updatePassengers).Methods("GET", "PATCH")
 	router.HandleFunc("/api/v1/drivers/{id}", updateDrivers).Methods("GET", "PATCH")
 
 	fmt.Println("Listening at port 5001")
 	log.Fatal(http.ListenAndServe(":5001", router))
 }
 
-func passengers(w http.ResponseWriter, r *http.Request) {
+func createPassengers(w http.ResponseWriter, r *http.Request) {
 
 	// Get the request body
 	if r.Method == "POST" {
@@ -61,7 +62,7 @@ func passengers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func drivers(w http.ResponseWriter, r *http.Request) {
+func createDrivers(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		if reqBody, err := ioutil.ReadAll(r.Body); err == nil {
 			var driver Driver
@@ -84,7 +85,7 @@ func updateDrivers(w http.ResponseWriter, r *http.Request) {
 		if reqBody, err := ioutil.ReadAll(r.Body); err == nil {
 			var driver map[string]interface{}
 			if err := json.Unmarshal(reqBody, &driver); err == nil {
-				if orig, ok := isExist(params["id"]); ok {
+				if orig, ok := isDriverExist(params["id"]); ok {
 					fmt.Println(driver)
 					for key, value := range driver {
 						switch key {
@@ -112,6 +113,45 @@ func updateDrivers(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusBadRequest)
 			}
 		}
+	}
+}
+
+func updatePassengers(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	if r.Method == "PATCH" {
+		if reqBody, err := ioutil.ReadAll(r.Body); err == nil {
+			var passenger map[string]interface{}
+			if err := json.Unmarshal(reqBody, &passenger); err == nil {
+				if orig, ok := isPassengerExist(params["id"]); ok {
+					fmt.Println(passenger)
+					for key, value := range passenger {
+						switch key {
+						case "FirstName":
+							orig.FirstName = value.(string)
+						case "LastName":
+							orig.LastName = value.(string)
+						case "PhoneNo":
+							orig.PhoneNo = value.(string)
+						case "Email":
+							orig.Email = value.(string)
+						case "Password":
+							orig.Password = value.(string)
+						}
+					}
+					updatePassenger(params["id"], orig)
+					w.WriteHeader(http.StatusAccepted)
+					fmt.Println("Updated")
+				} else {
+					w.WriteHeader(http.StatusNotFound)
+					fmt.Println("Not Found")
+				}
+			} else {
+				fmt.Println(err)
+				w.WriteHeader(http.StatusBadRequest)
+				fmt.Println("Bad Request")
+			}
+		}
+
 	}
 }
 
@@ -157,7 +197,23 @@ func updateDriver(id string, driver Driver) {
 	}
 }
 
-func isExist(id string) (Driver, bool) {
+func updatePassenger(id string, passenger Passenger) {
+	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3307)/trip_db")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer db.Close()
+
+	// Update the passenger
+	pid, _ := strconv.Atoi(id)
+	_, err = db.Exec("UPDATE passenger SET FirstName=?, LastName=?, PhoneNo=?, Email=?, Password=? WHERE PassengerID=?", passenger.FirstName, passenger.LastName, passenger.PhoneNo, passenger.Email, passenger.Password, pid)
+	if err != nil {
+		fmt.Println(err)
+		panic(err.Error())
+	}
+}
+
+func isDriverExist(id string) (Driver, bool) {
 	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3307)/trip_db")
 	if err != nil {
 		panic(err.Error())
@@ -172,4 +228,21 @@ func isExist(id string) (Driver, bool) {
 		return Driver{}, false
 	}
 	return driver, true
+}
+
+func isPassengerExist(id string) (Passenger, bool) {
+	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3307)/trip_db")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer db.Close()
+	pId, _ := strconv.Atoi(id)
+	results := db.QueryRow("SELECT FirstName,LastName,PhoneNo,Email,Password FROM passenger WHERE PassengerID = ?", pId)
+	var passenger Passenger
+	err = results.Scan(&passenger.FirstName, &passenger.LastName, &passenger.PhoneNo, &passenger.Email, &passenger.Password)
+	if err != nil {
+		fmt.Println(err)
+		return Passenger{}, false
+	}
+	return passenger, true
 }
