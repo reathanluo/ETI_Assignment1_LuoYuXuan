@@ -238,6 +238,47 @@ func updatePassenger(id string, passenger Passenger) {
 	}
 }
 
+func findDriver() (string, bool) {
+	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3307)/trip_db")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer db.Close()
+
+	// Find the driverID that has not been assigned a trip (onTrip = 0)
+
+	var driverID string
+	if err := db.QueryRow("SELECT DriverID FROM driver WHERE onTrip = 0 LIMIT 1").Scan(&driverID); err == nil {
+		_, err = db.Exec("UPDATE driver SET onTrip = 1 WHERE DriverID = ?", driverID)
+		if err != nil {
+			panic(err.Error())
+		}
+		return driverID, true
+	} else {
+		panic(err.Error())
+	}
+}
+
+func updateDriverFound(id string) {
+	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3307)/trip_db")
+
+	if err != nil {
+		panic(err.Error())
+	}
+	defer db.Close()
+
+	pid, _ := strconv.Atoi(id)
+
+	driverID, found := findDriver()
+	if found {
+		_, err := db.Exec("UPDATE trip SET DriverID = ? WHERE PassengerID = ?", driverID, pid)
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+
+}
+
 func createTripForPassenger(id string, trip passengerTrip) {
 	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3307)/trip_db")
 	if err != nil {
@@ -245,12 +286,19 @@ func createTripForPassenger(id string, trip passengerTrip) {
 	}
 	defer db.Close()
 
-	// Insert the trip
 	pid, _ := strconv.Atoi(id)
-	_, err = db.Exec("INSERT INTO trip (PassengerID, StartPostal, EndPostal) VALUES (?,?,?)", pid, trip.StartPostal, trip.EndPostal)
-	if err != nil {
+
+	_, err2 := db.Exec("INSERT INTO trip (PassengerID, StartPostal, EndPostal) VALUES (?,?,?)", pid, trip.StartPostal, trip.EndPostal)
+	if err2 != nil {
 		panic(err.Error())
 	}
+
+	_, err3 := db.Exec("UPDATE passenger SET onTrip = 1 WHERE PassengerID = ?", pid)
+	if err3 != nil {
+		panic(err.Error())
+	}
+
+	updateDriverFound(id)
 }
 
 func isDriverExist(id string) (Driver, bool) {
