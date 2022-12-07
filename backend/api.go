@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 
@@ -33,17 +34,24 @@ type Driver struct {
 }
 
 type passengerTrip struct {
+	
 	// PassengerID string `json:"PassengerId"`
-	StartPostal string `json:"StartPostal"`
-	EndPostal   string `json:"EndPostal"`
+	StartPostal string  `json:"StartPostal"`
+	EndPostal   string  `json:"EndPostal"`
+	StartTime   *string `json:"StartTime"`
+	EndTime     *string `json:"EndTime"`
 }
 
 func main() {
 	router := mux.NewRouter()
-	router.HandleFunc("/api/v1/passengers", createPassengers).Methods("POST", "PATCH")
+	router.HandleFunc("/api/v1/newPassenger", createPassengers).Methods("POST", "PATCH")
 	router.HandleFunc("/api/v1/passengers/{id}", updatePassengers).Methods("GET", "PATCH")
 	router.HandleFunc("/api/v1/drivers/{id}", driverInfo).Methods("POST", "PATCH")
-	router.HandleFunc("/api/v1/trips/{passengerID}", createTrips).Methods("POST", "PATCH")
+	router.HandleFunc("/api/v1/trip/{passengerID}", createTrips).Methods("POST", "PATCH")
+	router.HandleFunc("/api/v1/trips/{driverID}/{startEndTrip}", updateTrips).Methods("GET", "PATCH")
+
+	//passenger retrieve all trips he has taken before in reverse chronological order
+	// router.HandleFunc("/api/v1/trips/{passengerID}", retrieveTrips).Methods("GET")
 
 	fmt.Println("Listening at port 5001")
 	log.Fatal(http.ListenAndServe(":5001", router))
@@ -77,6 +85,38 @@ func createTrips(w http.ResponseWriter, r *http.Request) {
 				if _, ok := isPassengerExist(params["passengerID"]); ok {
 					createTripForPassenger(params["passengerID"], trip)
 					w.WriteHeader(http.StatusCreated)
+				} else {
+					w.WriteHeader(http.StatusBadRequest)
+				}
+			} else {
+				fmt.Println(err)
+				w.WriteHeader(http.StatusBadRequest)
+			}
+		}
+	}
+}
+
+func updateTrips(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	if r.Method == "PATCH" {
+		if reqBody, err := ioutil.ReadAll(r.Body); err == nil {
+			var trip passengerTrip
+			if err := json.Unmarshal(reqBody, &trip); err == nil {
+				if _, ok := isDriverExist(params["driverID"]); ok {
+					if _, ok := isTripExist(params["driverID"]); ok {
+						if params["startEndTrip"] == "start" {
+							startTrip(params["driverID"])
+							w.WriteHeader(http.StatusCreated)
+						} else if params["startEndTrip"] == "end" {
+							endTrip(params["driverID"])
+							w.WriteHeader(http.StatusCreated)
+						} else {
+							w.WriteHeader(http.StatusBadRequest)
+						}
+					} else {
+						w.WriteHeader(http.StatusBadRequest)
+					}
+
 				} else {
 					w.WriteHeader(http.StatusBadRequest)
 				}
@@ -179,6 +219,13 @@ func updatePassengers(w http.ResponseWriter, r *http.Request) {
 
 	}
 }
+
+// func retrieveTrips(w http.ResponseWriter, r *http.Request) {
+// 	params := mux.Vars(r)
+// 	if r.Method == "GET" {
+
+// }
+
 
 func insertPassenger(passenger Passenger) {
 	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3307)/trip_db")
@@ -333,3 +380,61 @@ func isPassengerExist(id string) (Passenger, bool) {
 	}
 	return passenger, true
 }
+
+func isTripExist(driverId string) (passengerTrip, bool) {
+	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3307)/trip_db")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer db.Close()
+
+	results := db.QueryRow("SELECT StartPostal,EndPostal FROM trip WHERE DriverID = ?", driverId)
+	var trip passengerTrip
+	err = results.Scan(&trip.StartPostal, &trip.EndPostal)
+	if err != nil {
+		return passengerTrip{}, false
+	}
+	return trip, true
+}
+
+func startTrip(tripID string) {
+	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3307)/trip_db")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer db.Close()
+
+	tid, _ := strconv.Atoi(tripID)
+
+	_, err = db.Exec("UPDATE trip SET StartTime = ? WHERE TripID = ?", time.Now(), tid)
+	if err != nil {
+		panic(err.Error())
+	}
+}
+
+func endTrip(tripID string) {
+	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3307)/trip_db")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer db.Close()
+
+	tid, _ := strconv.Atoi(tripID)
+
+	_, err = db.Exec("UPDATE trip SET EndTime = ? WHERE TripID = ?", time.Now(), tid)
+	if err != nil {
+		panic(err.Error())
+	}
+	//Set onTrip to 0 for both driver and passenger
+	_, err = db.Exec("UPDATE driver SET onTrip = 0 WHERE DriverID = (SELECT DriverID FROM trip WHERE TripID = ?)", tid)
+	if err != nil {
+		panic(err.Error())
+	}
+	_, err2 := db.Exec("UPDATE passenger SET onTrip = 0 WHERE PassengerID = (SELECT PassengerID FROM trip WHERE TripID = ?)", tid)
+	if err2 != nil {
+		panic(err.Error())
+	}
+
+}
+
+// func getTrip(tripID string) (passengerTrip, bool) {
