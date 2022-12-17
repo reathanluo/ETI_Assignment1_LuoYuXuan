@@ -1,0 +1,93 @@
+<html>
+<head>
+  <title>Login</title>
+</head>
+<body>
+  <h1>Login</h1>
+  <form onsubmit="return sendJson()">
+    <label for="email">Email:</label><br>
+    <input type="email" id="email" name="email"><br>
+    <label for="password">Password:</label><br>
+    <input type="password" id="password" name="password"><br><br>
+    <button>Login</button>
+  </form> 
+  
+
+  
+  <!-- <script>
+  function sendJSON() {
+    // Get the email and password values from the form
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+  
+    // Construct the JSON object to be sent as the request body
+    const json = { "email": email, "password": password };
+  
+    // Send the POST request with the JSON object as the request body
+    fetch("/api/v1/loginPassenger", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(json)
+    })
+    .then(response => {
+      if (response.status === 200) {
+        // Redirect to the home page
+        window.location.href = "passenger.html";
+      } else {
+        // Display an error message
+        document.getElementById("error").innerHTML = "Invalid email or password";
+      }
+    });
+  }
+  </script> -->
+  
+
+<!--   
+  <form id="login-form">
+    <label for="email">Email:</label><br>
+    <input type="email" id="email" name="email"><br>
+    <label for="password">Password:</label><br>
+    <input type="password" id="password" name="password"><br><br>
+    <label for="user-type">I am a:</label><br>
+    <input type="radio" id="passenger" name="user-type" value="passenger" checked>
+    <label for="passenger">Passenger</label><br>
+    <input type="radio" id="driver" name="user-type" value="driver">
+    <label for="driver">Driver</label><br><br>
+    <button type="submit" onclick="login()">Login</button>
+  </form>  -->
+<!-- 
+  <script>
+    function login(){
+        var request = new XMLHttpRequest()
+        const email = document.getElementById("email").value
+        const password = document.getElementById("password").value
+        const userType = document.querySelector('input[name="user-type"]:checked').value
+        const json = {"email": email, "password": password}
+        let endpoint
+        if (userType === 'passenger') {
+            endpoint = 'http://localhost:5001/api/v1/loginPassenger'
+        } else {
+            endpoint = 'http://localhost:5001/api/v1/loginDriver'
+        }
+
+        request.open('POST', endpoint)
+
+        request.onload = function(){
+            if (request.status == 200){
+                alert("Login successful")
+            }
+
+            else if (request.status == 404){
+                alert("User not found")
+            }
+
+            else if (request.status == 401){
+                alert("Incorrect password")
+            }
+        }
+        request.send(JSON.stringify(json))
+
+    }
+</script> -->
+</body>
+</html>

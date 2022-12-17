@@ -15,6 +15,11 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type Credentials struct {
+	Email    string `json:"Email"`
+	Password string `json:"Password"`
+}
+
 type Passenger struct {
 	FirstName string `json:"FirstName"`
 	LastName  string `json:"LastName"`
@@ -34,7 +39,7 @@ type Driver struct {
 }
 
 type passengerTrip struct {
-	
+
 	// PassengerID string `json:"PassengerId"`
 	StartPostal string  `json:"StartPostal"`
 	EndPostal   string  `json:"EndPostal"`
@@ -44,6 +49,9 @@ type passengerTrip struct {
 
 func main() {
 	router := mux.NewRouter()
+	router.HandleFunc("/api/v1/loginPassenger", loginPassenger).Methods("POST")
+	// router.HandleFunc("/api/v1/loginDriver", loginDriver).Methods("POST", "PATCH")
+
 	router.HandleFunc("/api/v1/newPassenger", createPassengers).Methods("POST", "PATCH")
 	router.HandleFunc("/api/v1/passengers/{id}", updatePassengers).Methods("GET", "PATCH")
 	router.HandleFunc("/api/v1/drivers/{id}", driverInfo).Methods("POST", "PATCH")
@@ -55,6 +63,28 @@ func main() {
 
 	fmt.Println("Listening at port 5001")
 	log.Fatal(http.ListenAndServe(":5001", router))
+}
+
+func loginPassenger(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		if reqBody, err := ioutil.ReadAll(r.Body); err == nil {
+			var credentials Credentials
+			if err := json.Unmarshal(reqBody, &credentials); err == nil {
+				if _, ok := isPassengerValid(credentials.Email, credentials.Password); ok {
+					fmt.Fprintf(w, "Logined in")
+					w.WriteHeader(http.StatusOK)
+				} else {
+					fmt.Fprintf(w, "not 1")
+
+					w.WriteHeader(http.StatusBadRequest)
+				}
+			} else {
+				fmt.Fprintf(w, "not 2")
+
+				w.WriteHeader(http.StatusBadRequest)
+			}
+		}
+	}
 }
 
 func createPassengers(w http.ResponseWriter, r *http.Request) {
@@ -225,7 +255,6 @@ func updatePassengers(w http.ResponseWriter, r *http.Request) {
 // 	if r.Method == "GET" {
 
 // }
-
 
 func insertPassenger(passenger Passenger) {
 	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3307)/trip_db")
@@ -435,6 +464,22 @@ func endTrip(tripID string) {
 		panic(err.Error())
 	}
 
+}
+
+func isPassengerValid(email, password string) (string, bool) {
+	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3307)/trip_db")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer db.Close()
+
+	results := db.QueryRow("SELECT PassengerID FROM passenger WHERE Email = ? AND Password = ?", email, password)
+	var passengerID string
+	err = results.Scan(&passengerID)
+	if err != nil {
+		return "", false
+	}
+	return passengerID, true
 }
 
 // func getTrip(tripID string) (passengerTrip, bool) {

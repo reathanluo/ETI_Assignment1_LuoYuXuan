@@ -1,0 +1,46 @@
+<html>
+<head>
+  <title>Passenger Dashboard</title>
+</head>
+<body>
+  <nav>
+    <a href="#" class="nav-item active" data-page="profile">Profile</a>
+    <a href="#" class="nav-item" data-page="ride-history">Ride History</a>
+    <a href="#" class="nav-item" data-page="logout">Logout</a>
+  </nav>
+
+  <div id="profile" class="page active">
+    <!-- profile page content goes here -->
+  </div>
+  <div id="ride-history" class="page">
+    <!-- ride history page content goes here -->
+  </div>
+  <div id="logout" class="page">
+    <!-- logout page content goes here -->
+  </div>
+
+  <script>
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+      item.addEventListener('click', e => {
+        e.preventDefault();
+        const pageId = item.getAttribute('data-page');
+        showPage(pageId);
+      });
+    });
+
+    function showPage(pageId) {
+      const pages = document.querySelectorAll('.page');
+      pages.forEach(page => {
+        page.classList.remove('active');
+      });
+      const navItems = document.querySelectorAll('.nav-item');
+      navItems.forEach(item => {
+        item.classList.remove('active');
+      });
+      document.getElementById(pageId).classList.add('active');
+      document.querySelector(`[data-page="${pageId}"]`).classList.add('active');
+    }
+  </script>
+</body>
+</html>
