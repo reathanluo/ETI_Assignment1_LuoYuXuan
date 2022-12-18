@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Sign Up Form</title>
+  </head>
+  <body>
+    <form id="signup-form">
+      <label for="user-type">Are you a passenger or a driver?</label><br>
+      <input type="radio" id="passenger" name="user-type" value="passenger" checked>
+      <label for="passenger">Passenger</label><br>
+      <input type="radio" id="driver" name="user-type" value="driver">
+      <label for="driver">Driver</label><br><br>
+      <label for="email">Email:</label><br>
+      <input type="email" id="email" name="email"><br>
+      <label for="first-name">First Name:</label><br>
+      <input type="text" id="first-name" name="first-name"><br>
+      <label for="last-name">Last Name:</label><br>
+      <input type="text" id="last-name" name="last-name"><br>
+      <label for="phone-number">Phone Number:</label><br>
+      <input type="text" id="phone-number" name="phone-number"><br>
+      <label for="password">Password:</label><br>
+      <input type="password" id="password" name="password"><br>
+      <!-- Driver-specific fields -->
+      <div id="driver-fields" style="display: none;">
+        <label for="ic-number">IC Number:</label><br>
+        <input type="text" id="ic-number" name="ic-number"><br>
+        <label for="license-number">License Number:</label><br>
+        <input type="text" id="license-number" name="license-number"><br>
+      </div>
+      <br>
+      <input type="submit" value="Submit">
+    </form> 
+    
+    <script>
+      // Get the user type radio buttons
+      const userTypeRadios = document.getElementsByName('user-type');
+      
+      // Add a change event listener to the user type radio buttons
+      for (let i = 0; i < userTypeRadios.length; i++) {
+        userTypeRadios[i].addEventListener('change', (event) => {
+          // Show or hide the driver-specific fields based on the selected user type
+          const driverFields = document.getElementById('driver-fields');
+          if (event.target.value === 'driver') {
+            driverFields.style.display = 'block';
+          } else {
+            driverFields.style.display = 'none';
+          }
+        });
+      }
+
+      function signUp() {
+        // Get the form data
+        const userType = document.querySelector('input[name="user-type"]:checked').value;
+        const Email = document.getElementById('email').value;
+        const FirstName = document.getElementById('first-name').value;
+        const LastName = document.getElementById('last-name').value;
+        const PhoneNo = document.getElementById('phone-number').value;
+        const Password = document.getElementById('password').value;
+        let body;
+        if (userType === 'driver') {
+            const IcNO = document.getElementById('ic-number').value;
+            const LicenseNo = document.getElementById('license-number').value;
+
+            body = { 
+            Email,
+            FirstName,
+            LastName,
+            PhoneNo,
+            Password,
+            IcNO,
+            LicenseNo,
+            };
+        } else {
+            body = {
+            Email,
+            FirstName,
+            LastName,
+            PhoneNo,
+            Password,
+            };
+        }
+        
+        // Send a POST request to the API
+        fetch(`http://localhost:5002/api/v1/signup/${userType}`, {
+            method: 'POST',
+            body: JSON.stringify(body),
+            headers: {
+                'Content-Type' : 'application/x-www-form-urlencoded; charset=UTF-8'            }
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                console.log(data)
+            // Check if the sign up was successful
+            if (data.status === 'success') {
+                // Redirect the user to the login page
+                window.location.href = '../frontend/login.html'
+            } else {
+                // Display an error message
+                alert("Please try again");
+            }
+            })
+        }
+
+        // Add a submit event listener to the form
+        const signupForm = document.getElementById('signup-form');
+        signupForm.addEventListener('submit', (event) => {
+        // Prevent the form from submitting
+        event.preventDefault();
+        
+        // Sign up the user
+        signUp();
+        });
+    </script>
+  </body>
+</html>
+

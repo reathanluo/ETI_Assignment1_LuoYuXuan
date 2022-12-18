@@ -1,4 +1,4 @@
-module authentication.go
+module trip.go
 
 go 1.19
 

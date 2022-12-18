@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Driver Information</title>
+    <style>
+      .no-outline {
+        border:0;
+        outline: none;
+      }
+        .no-outline:focus {
+        border:0;
+        outline: none;
+      }
+
+
+    </style>
+  </head>
+  <body>
+    <h1>Driver Information</h1>
+    <div id="driver-info">
+      <!-- Driver information will be displayed here -->
+    </div>
+    <button id="edit-button">Edit</button>
+    <form id="edit-form" style="display: none;">
+      <!-- Form fields for editing the driver information -->
+      <label>
+        First Name:
+        <input type="text" id="first-name" />
+      </label>
+      <br />
+      <label>
+        Last Name:
+        <input type="text" id="last-name" />
+      </label>
+      <br />
+      <label>
+        Email:
+        <input type="email" id="email" />
+      </label>
+      <br />
+      <label>
+        Mobile Number:
+        <input type="text" id="mobile-number" />
+      </label>
+      <br />
+      <label>
+        IC Number:
+        <input class="no-outline" type="text" id="ic-number" readonly/>
+      </label>
+      <br />
+      <label>
+        License Number:
+        <input type="text" id="license-number" />
+      </label>
+      <br />
+      <button type="submit">Save</button>
+      <button type="button" id="cancel-button">Cancel</button>
+    </form>
+    <h1>Current Trip</h1>
+    <button id="start-trip-button">Start Trip</button>
+    <button id="end-trip-button">End Trip</button>
+    <div id="current-trip">
+      <!-- refresh button -->
+    </div>
+    <br />
+    <button id="refresh-button">Refresh</button>
+
+    <button id="logout-button">Log Out</button>
+
+    <script>
+        //Get the driver information from the API and display it, driverID from sessionStorage
+        const driverID = sessionStorage.getItem('userID');
+        //if session storage is empty, redirect to login page
+        if (driverID === null) {
+            window.location.href = 'login.html';
+        }
+        fetch(`http://localhost:5001/api/v1/driver/${driverID}`)
+            .then(response => response.json())
+            .then(driver => {
+              console.log(driver);
+                const driverInfo = document.getElementById('driver-info');
+                driverInfo.innerHTML = `
+                    <p>First Name: ${driver.FirstName}</p>
+                    <p>Last Name: ${driver.LastName}</p>
+                    <p>Email: ${driver.Email}</p>
+                    <p>Mobile Number: ${driver.PhoneNo}</p>
+                    <p>IC Number: ${driver.IcNumber}</p>
+                    <p>License Number: ${driver.LicenseNo}</p>
+                `;
+            });
+
+        //Get the edit button and add a click event listener to it
+        const editButton = document.getElementById('edit-button');
+        editButton.addEventListener('click', () => {
+            //Get the driver information from the API and display it in the form
+            const driverID = sessionStorage.getItem('userID');
+            fetch(`http://localhost:5001/api/v1/driver/${driverID}`)
+                .then(response => response.json())
+                .then(driver => {
+                    document.getElementById('first-name').value = driver.FirstName;
+                    document.getElementById('last-name').value = driver.LastName;
+                    document.getElementById('email').value = driver.Email;
+                    document.getElementById('mobile-number').value = driver.PhoneNo;
+                    document.getElementById('ic-number').value = driver.IcNumber;
+                    document.getElementById('license-number').value = driver.LicenseNo;
+                });
+
+
+            const driverInfo = document.getElementById('driver-info');
+            driverInfo.style.display = 'none';
+            const editForm = document.getElementById('edit-form');
+            editForm.style.display = 'block';
+            //hide the edit button 
+            editButton.style.display = 'none';
+
+        });
+
+        //Get the cancel button and add a click event listener to it
+        const cancelButton = document.getElementById('cancel-button');
+        cancelButton.addEventListener('click', () => {
+            //Hide the edit form
+            const driverInfo = document.getElementById('driver-info');
+            driverInfo.style.display = 'block';
+
+            const editForm = document.getElementById('edit-form');
+            //Show the edit button
+            editForm.style.display = 'none';
+            editButton.style.display = 'block';
+
+
+        });
+
+        //Get the edit form and add a submit event listener to it
+        const editForm = document.getElementById('edit-form');
+        editForm.addEventListener('submit', (event) => {
+            //Prevent the form from submitting
+            event.preventDefault();
+
+            //Get the driver information from the form
+            const driver = {
+                FirstName: document.getElementById('first-name').value,
+                LastName: document.getElementById('last-name').value,
+                Email: document.getElementById('email').value,
+                PhoneNo: document.getElementById('mobile-number').value,
+                IcNo: document.getElementById('ic-number').value,
+                LicenseNo: document.getElementById('license-number').value
+            };
+
+
+            //Send the driver information to the API
+            const driverID = sessionStorage.getItem('userID');
+            fetch(`http://localhost:5001/api/v1/driver/${driverID}`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type' : 'application/x-www-form-urlencoded; charset=UTF-8',
+                },
+                body: JSON.stringify(driver)
+            })
+                .then(response => response.json())
+                .then(driver => {
+                  const driverInfo = document.getElementById('driver-info');
+                  driverInfo.style.display = 'block';
+                  const editForm = document.getElementById('edit-form');
+                  editForm.style.display = 'none';
+                  editButton.style.display = 'block';
+                  driverInfo.innerHTML = `
+                      <p>First Name: ${driver.FirstName}</p>
+                      <p>Last Name: ${driver.LastName}</p>
+                      <p>Email: ${driver.Email}</p>
+                      <p>Mobile Number: ${driver.PhoneNo}</p>
+                      <p>IC Number: ${driver.IcNumber}</p>
+                      <p>License Number: ${driver.LicenseNo}</p>
+                  `;
+                });
+        });
+
+        //Get the current trip information from the API and display it
+
+        //get local storage
+        const currentTrip = localStorage.getItem(driverID);
+        if (currentTrip === "true") {
+          fetch(`http://localhost:5003/api/v1/trips/currenttrip/${driverID}`)
+            .then(response => response.json())
+            .then(trip => {
+              const currentTrip = document.getElementById('current-trip');
+              if (trip.EndPostal === "") {
+                currentTrip.innerHTML = `
+                    <p>No current trip</p>
+                `;}
+              else {
+                currentTrip.innerHTML = `
+                    <p>Start Time: ${trip.StartTime}</p>
+                    <p>End Time: ${trip.EndTime}</p>
+                    <p>Start Postal Code: ${trip.StartPostal}</p>
+                    <p>End Postal Code: ${trip.EndPostal}</p>
+                    <p>Passenger Name: ${trip.PassengerName}</p>
+
+                `;
+              }
+            });
+        }
+        else {
+          fetch(`http://localhost:5003/api/v1/trips/currenttripns/${driverID}`)
+            .then(response => response.json())
+            .then(trip => {
+              const currentTrip = document.getElementById('current-trip');
+              if (trip.EndPostal === "") {
+                currentTrip.innerHTML = `
+                    <p>No current trip</p>
+                `;}
+              else {
+                currentTrip.innerHTML = `
+                    <p>Start Postal Code: ${trip.StartPostal}</p>
+                    <p>End Postal Code: ${trip.EndPostal}</p>
+                    <p>Passenger Name: ${trip.PassengerName}</p>
+
+                `;
+              }
+            });
+        }
+
+        
+
+          //start trip button
+          const startTripButton = document.getElementById('start-trip-button');
+          if(startTripButton !== null) {
+            //post to the api
+            startTripButton.addEventListener('click', () => {
+              localStorage.setItem(driverID, "true");
+              fetch(`http://localhost:5003/api/v1/trips/start/${driverID}`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type' : 'application/x-www-form-urlencoded; charset=UTF-8',
+                  }
+              })
+              window.location.reload();
+            });
+          }
+          //refresh page
+
+          //end trip button
+          const endTripButton = document.getElementById('end-trip-button');
+          if(endTripButton !== null) {
+            //post to the api
+            endTripButton.addEventListener('click', () => {
+              localStorage.removeItem(driverID);
+              fetch(`http://localhost:5003/api/v1/trips/end/${driverID}`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type' : 'application/x-www-form-urlencoded; charset=UTF-8',
+                  }
+              })
+              window.location.reload();
+            });
+          }
+
+          //refresh button
+          const refreshButton = document.getElementById('refresh-button');
+
+          refreshButton.addEventListener('click', () => {
+            window.location.reload();
+          });
+
+        //Get the logout button and add a click event listener to it
+        const logoutButton = document.getElementById('logout-button');
+        logoutButton.addEventListener('click', () => {
+            //Clear the session storage
+            sessionStorage.clear();
+            //Redirect to the login page
+            window.location.href = 'login.html';
+        });
+
+    </script>
+  </body>
+</html>

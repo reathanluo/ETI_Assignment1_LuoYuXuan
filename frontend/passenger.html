@@ -1,46 +1,273 @@
+<!DOCTYPE html>
 <html>
-<head>
-  <title>Passenger Dashboard</title>
-</head>
-<body>
-  <nav>
-    <a href="#" class="nav-item active" data-page="profile">Profile</a>
-    <a href="#" class="nav-item" data-page="ride-history">Ride History</a>
-    <a href="#" class="nav-item" data-page="logout">Logout</a>
-  </nav>
+  <head>
+    <title>Passenger Information</title>
+    <style>
+      table, th, td {
+   border:1px solid black;
+}
+    </style>
+  </head>
+  <body>
+    <h1>Passenger Information</h1>
+    <div id="passenger-info">
+    </div>
+    <button id="edit-button">Edit</button>
 
-  <div id="profile" class="page active">
-    <!-- profile page content goes here -->
-  </div>
-  <div id="ride-history" class="page">
-    <!-- ride history page content goes here -->
-  </div>
-  <div id="logout" class="page">
-    <!-- logout page content goes here -->
-  </div>
+    <form id="edit-form" style="display: none;">
+      <label>
+        First Name:
+        <input type="text" id="first-name" />
+      </label>
+      <br />
+      <label>
+        Last Name:
+        <input type="text" id="last-name" />
+      </label>
+      <br />
+      <label>
+        Email:
+        <input type="email" id="email" />
+      </label>
+      <br />
+      <label>
+        Mobile Number:
+        <input type="text" id="mobile-number" />
+      </label>
+      <br />
+      <button type="submit">Save</button>
+      <button type="button" id="cancel-button">Cancel</button>
+    </form>
 
-  <script>
-    const navItems = document.querySelectorAll('.nav-item');
-    navItems.forEach(item => {
-      item.addEventListener('click', e => {
-        e.preventDefault();
-        const pageId = item.getAttribute('data-page');
-        showPage(pageId);
-      });
-    });
+    <h1>Start Trip</h1>
+    <form id="trip-form">
+      <label>
+        Start Postal Code:
+        <input type="text" id="start-postal-code" />
+      </label>
+      <br />
+      <label>
+        End Postal Code:
+        <input type="text" id="end-postal-code" />
+      </label>
+      <br />
+      <button id="start-trip" type="submit">Start Trip</button>
+    </form>
 
-    function showPage(pageId) {
-      const pages = document.querySelectorAll('.page');
-      pages.forEach(page => {
-        page.classList.remove('active');
-      });
-      const navItems = document.querySelectorAll('.nav-item');
-      navItems.forEach(item => {
-        item.classList.remove('active');
-      });
-      document.getElementById(pageId).classList.add('active');
-      document.querySelector(`[data-page="${pageId}"]`).classList.add('active');
-    }
-  </script>
+    <div id="trip-info">
+    </div>
+
+
+    <h1>Trip History</h1>
+    <button id="refresh-button">Refresh</button>
+
+    <table id="trip-history">
+      <thead>
+        <tr>
+          <th>Start Time</th>
+          <th>End Time</th>
+          <th>Start Postal Code</th>
+          <th>End Postal Code</th>
+          <th>Driver Name</th>
+          <th>Driver's License Number</th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+
+    <br />
+    <button id="logout-button">Log Out</button>
+
+    <script>
+        const passengerID = sessionStorage.getItem('userID');
+        localStorage.removeItem(passengerID);
+        if (passengerID === null) {
+            window.location.href = 'login.html';
+        }
+        fetch(`http://localhost:5001/api/v1/passenger/${passengerID}`)
+            .then(response => response.json())
+            .then(data => {
+                const passengerInfo = document.getElementById('passenger-info');
+                passengerInfo.innerHTML = `
+                    <p>User Type: ${data.UserType}</p>
+                    <p>First Name: ${data.FirstName}</p>
+                    <p>Last Name: ${data.LastName}</p>
+                    <p>Email: ${data.Email}</p>
+                    <p>Mobile Number: ${data.PhoneNo}</p>
+                    
+                `;
+            });
+
+        const editButton = document.getElementById('edit-button');
+        editButton.addEventListener('click', () => {
+            const passengerID = sessionStorage.getItem('userID');
+            fetch(`http://localhost:5001/api/v1/passenger/${passengerID}`)
+                .then(response => response.json())
+                .then(data => {
+                    const firstName = document.getElementById('first-name');
+                    firstName.value = data.FirstName;
+                    const lastName = document.getElementById('last-name');
+                    lastName.value = data.LastName;
+                    const email = document.getElementById('email');
+                    email.value = data.Email;
+                    const mobileNumber = document.getElementById('mobile-number');
+                    mobileNumber.value = data.PhoneNo;
+                });
+
+            const passengerInfo = document.getElementById('passenger-info');
+            passengerInfo.style.display = 'none';
+            const editForm = document.getElementById('edit-form');
+            editForm.style.display = 'block';
+            editButton.style.display = 'none';
+        });
+
+        const cancelButton = document.getElementById('cancel-button');
+        cancelButton.addEventListener('click', () => {
+            const passengerInfo = document.getElementById('passenger-info');
+            passengerInfo.style.display = 'block';
+            const editForm = document.getElementById('edit-form');
+            editForm.style.display = 'none';
+            editButton.style.display = 'block';
+        });
+
+        const editForm = document.getElementById('edit-form');
+        editForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            const firstName = document.getElementById('first-name').value;
+            const lastName = document.getElementById('last-name').value;
+            const email = document.getElementById('email').value;
+            const mobileNumber = document.getElementById('mobile-number').value;
+
+            const passenger = {
+                FirstName: firstName,
+                LastName: lastName,
+                Email: email,
+                PhoneNo: mobileNumber
+            };
+
+            const passengerID = sessionStorage.getItem('userID');
+            fetch(`http://localhost:5001/api/v1/passenger/${passengerID}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type' : 'application/x-www-form-urlencoded; charset=UTF-8',
+                },
+                body: JSON.stringify(passenger)
+            })
+                .then(response => response.json())
+                .then(passenger => {
+                    const passengerInfo = document.getElementById('passenger-info');
+                    passengerInfo.style.display = 'block';
+                    const editForm = document.getElementById('edit-form');
+                    editForm.style.display = 'none';
+                    editButton.style.display = 'block';
+
+                    passengerInfo.innerHTML = `
+                        <p>User Type: ${passenger.UserType}</p>
+                        <p>First Name: ${passenger.FirstName}</p>
+                        <p>Last Name: ${passenger.LastName}</p>
+                        <p>Email: ${passenger.Email}</p>
+                        <p>Mobile Number: ${passenger.PhoneNo}</p>
+                    `;
+                });
+        });
+
+        const tripRequestForm = document.getElementById('trip-form');
+        tripRequestForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            const pickupLocation = document.getElementById('start-postal-code').value;
+            const dropoffLocation = document.getElementById('end-postal-code').value;
+            const passengerID = sessionStorage.getItem('userID');
+
+            const trip = {
+                StartPostal: pickupLocation,
+                EndPostal: dropoffLocation,
+            };
+
+            fetch(`http://localhost:5003/api/v1/trips/create/${passengerID}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type' : 'application/x-www-form-urlencoded; charset=UTF-8',
+                },
+                body: JSON.stringify(trip)
+            })
+                .then(response => response.json())
+                .then(trip => {
+
+                    localStorage.setItem(passengerID, "true" );
+                    const tripInfo = document.getElementById('trip-info');
+                    tripInfo.innerHTML = `
+                        <p>Start Time: ${trip.StartTime}</p>
+                        <p>End Time: ${trip.EndTime}</p>
+                        <p>Start Postal: ${trip.StartPostal}</p>
+                        <p>End Postal: ${trip.EndPostal}</p>
+                        <p>Driver Name: ${trip.DriverName}</p>
+                    `;
+                });
+        });
+
+        if (localStorage.getItem(passengerID) === "true") {
+            const tripForm = document.getElementById('trip-form');
+            tripForm.style.display = 'none';
+            const tripInfo = document.getElementById('trip-info');
+            tripInfo.style.display = 'block';
+
+            fetch(`http://localhost:5003/api/v1/trips/create/${passengerID}`)
+                .then(response => response.json())
+                .then(trip => {
+                    tripInfo.innerHTML = `
+                        <p>Start Time: ${trip.StartTime}</p>
+                        <p>End Time: ${trip.EndTime}</p>
+                        <p>Start Postal: ${trip.StartPostal}</p>
+                        <p>End Postal: ${trip.EndPostal}</p>
+                        <p>Driver Name: ${trip.DriverName}</p>
+                    `;
+                });
+        }
+        
+
+        const tripHistoryTable = document.getElementById('trip-history');
+        fetch(`http://localhost:5003/api/v1/trips/alltrips/${passengerID}`)
+            .then(response => response.json())
+            .then(trips => {
+                if (trips === null) {
+                    const row = tripHistoryTable.insertRow();
+                    const cell = row.insertCell();
+                    cell.innerHTML = 'No trips found';
+
+                }
+                else{
+                    trips.forEach(trip => {
+                        const row = tripHistoryTable.insertRow();
+                        const startTimeCell = row.insertCell();
+                        startTimeCell.innerHTML = trip.StartTime;
+                        const endTimeCell = row.insertCell();
+                        endTimeCell.innerHTML = trip.EndTime;
+                        const startPostalCodeCell = row.insertCell();
+                        startPostalCodeCell.innerHTML = trip.StartPostal;
+                        const endPostalCodeCell = row.insertCell();
+                        endPostalCodeCell.innerHTML = trip.EndPostal;
+                        const driverNameCell = row.insertCell();
+                        driverNameCell.innerHTML = trip.DriverName;
+                        const driverLicenseNumberCell = row.insertCell();
+                        driverLicenseNumberCell.innerHTML = trip.LicenseNo;
+                    });
+                }
+        });
+    
+        const refreshButton = document.getElementById('refresh-button');
+        refreshButton.addEventListener('click', () => {
+            window.location.reload();
+        });
+
+        const logoutButton = document.getElementById('logout-button');
+        logoutButton.addEventListener('click', () => {
+            sessionStorage.clear();
+            window.location.href = 'login.html';
+        });
+         
+    </script>
 </body>
 </html>
