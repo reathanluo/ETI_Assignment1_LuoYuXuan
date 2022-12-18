@@ -18,11 +18,9 @@
   <body>
     <h1>Driver Information</h1>
     <div id="driver-info">
-      <!-- Driver information will be displayed here -->
     </div>
     <button id="edit-button">Edit</button>
     <form id="edit-form" style="display: none;">
-      <!-- Form fields for editing the driver information -->
       <label>
         First Name:
         <input type="text" id="first-name" />
@@ -60,7 +58,6 @@
     <button id="start-trip-button">Start Trip</button>
     <button id="end-trip-button">End Trip</button>
     <div id="current-trip">
-      <!-- refresh button -->
     </div>
     <br />
     <button id="refresh-button">Refresh</button>
@@ -68,7 +65,6 @@
     <button id="logout-button">Log Out</button>
 
     <script>
-        //Get the driver information from the API and display it, driverID from sessionStorage
         const driverID = sessionStorage.getItem('userID');
         //if session storage is empty, redirect to login page
         if (driverID === null) {
@@ -84,7 +80,7 @@
                     <p>Last Name: ${driver.LastName}</p>
                     <p>Email: ${driver.Email}</p>
                     <p>Mobile Number: ${driver.PhoneNo}</p>
-                    <p>IC Number: ${driver.IcNumber}</p>
+                    <p>IC Number: ${driver.IcNO}</p>
                     <p>License Number: ${driver.LicenseNo}</p>
                 `;
             });
@@ -101,7 +97,7 @@
                     document.getElementById('last-name').value = driver.LastName;
                     document.getElementById('email').value = driver.Email;
                     document.getElementById('mobile-number').value = driver.PhoneNo;
-                    document.getElementById('ic-number').value = driver.IcNumber;
+                    document.getElementById('ic-number').value = driver.IcNO;
                     document.getElementById('license-number').value = driver.LicenseNo;
                 });
 
@@ -142,7 +138,7 @@
                 LastName: document.getElementById('last-name').value,
                 Email: document.getElementById('email').value,
                 PhoneNo: document.getElementById('mobile-number').value,
-                IcNo: document.getElementById('ic-number').value,
+                IcNO: document.getElementById('ic-number').value,
                 LicenseNo: document.getElementById('license-number').value
             };
 
@@ -168,7 +164,7 @@
                       <p>Last Name: ${driver.LastName}</p>
                       <p>Email: ${driver.Email}</p>
                       <p>Mobile Number: ${driver.PhoneNo}</p>
-                      <p>IC Number: ${driver.IcNumber}</p>
+                      <p>IC Number: ${driver.IcNO}</p>
                       <p>License Number: ${driver.LicenseNo}</p>
                   `;
                 });
@@ -191,7 +187,6 @@
                 localStorage.setItem('pid', trip.PassengerID);
                 currentTrip.innerHTML = `
                     <p>Start Time: ${trip.StartTime}</p>
-                    <p>End Time: ${trip.EndTime}</p>
                     <p>Start Postal Code: ${trip.StartPostal}</p>
                     <p>End Postal Code: ${trip.EndPostal}</p>
                     <p>Passenger Name: ${trip.PassengerName}</p>

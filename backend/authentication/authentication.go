@@ -31,7 +31,7 @@ type Driver struct {
 	LastName  string `json:"LastName"`
 	PhoneNo   string `json:"PhoneNo"`
 	Email     string `json:"Email"`
-	IcNO      string `json:"IcNumber"`
+	IcNO      string `json:"IcNO"`
 	LicenseNo string `json:"LicenseNo"`
 	Password  string `json:"Password"`
 }
@@ -49,7 +49,7 @@ type LoggedInUser struct {
 	FirstName string `json:"FirstName"`
 	LastName  string `json:"LastName"`
 	PhoneNo   string `json:"PhoneNo"`
-	IcNO      string `json:"IcNumber"`
+	IcNO      string `json:"IcNO"`
 	LicenseNo string `json:"LicenseNo"`
 }
 
@@ -298,7 +298,6 @@ func checkPassword(db *sql.DB, email string, password string) bool {
 		return true
 	}
 	return false
-
 }
 
 func retrieveUserInfo(db *sql.DB, email string) (User, error) {

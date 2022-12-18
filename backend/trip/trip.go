@@ -132,7 +132,6 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 				panic(err.Error())
 			}
 		}
-		//select current trip info and return
 		var currentTrip Trip
 		result, err6 := db.Query("SELECT t.TripID, t.PassengerID, t.DriverID, CONCAT_WS('',d.FirstName,' ',d.LastName) AS Name,d.LicenseNo, t.StartPostal, t.EndPostal FROM trip t inner join Driver d on t.DriverID = d.DriverID where t.PassengerID = ? AND t.EndTime IS NULL", trip.PassengerID)
 

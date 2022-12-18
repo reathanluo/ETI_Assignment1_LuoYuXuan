@@ -4,6 +4,7 @@
     <title>Sign Up Form</title>
   </head>
   <body>
+    <h1>Sign Up</h1>
     <form id="signup-form">
       <label for="user-type">Are you a passenger or a driver?</label><br>
       <input type="radio" id="passenger" name="user-type" value="passenger" checked>
@@ -30,6 +31,9 @@
       <br>
       <input type="submit" value="Submit">
     </form> 
+
+    <br />
+    <a href="login.html">Log in instead</a>
     
     <script>
       // Get the user type radio buttons
@@ -91,7 +95,7 @@
             .then((data) => {
                 console.log(data)
             // Check if the sign up was successful
-            if (data.status === 'success') {
+            if (data.Email !== null) {
                 // Redirect the user to the login page
                 window.location.href = '../frontend/login.html'
             } else {

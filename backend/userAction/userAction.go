@@ -33,7 +33,7 @@ type Driver struct {
 	LastName  string `json:"LastName"`
 	PhoneNo   string `json:"PhoneNo"`
 	Email     string `json:"Email"`
-	IcNO      string `json:"IcNumber"`
+	IcNO      string `json:"IcNO"`
 	LicenseNo string `json:"LicenseNo"`
 	Password  string `json:"Password"`
 }
@@ -46,7 +46,7 @@ type LoggedInUser struct {
 	FirstName string `json:"FirstName"`
 	LastName  string `json:"LastName"`
 	PhoneNo   string `json:"PhoneNo"`
-	IcNO      string `json:"IcNumber"`
+	IcNO      string `json:"IcNO"`
 	LicenseNo string `json:"LicenseNo"`
 }
 
@@ -67,8 +67,6 @@ func main() {
 }
 
 func GetPassenger(w http.ResponseWriter, r *http.Request) {
-	// according to the passengerId, retrieve the passenger details from the database, and store it in LoggedInUser struct
-	// then return the struct as json
 
 	db, err := sql.Open("mysql", sqlDb)
 	if err != nil {
@@ -84,7 +82,7 @@ func GetPassenger(w http.ResponseWriter, r *http.Request) {
 	loggedInUser.UserType = "passenger"
 
 	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK) //200
+		w.WriteHeader(http.StatusOK)
 		return
 	} else if r.Method == "GET" {
 
@@ -124,12 +122,11 @@ func GetPassenger(w http.ResponseWriter, r *http.Request) {
 			panic(err.Error())
 		}
 		// update user details in database
-
 		_, err2 := db.Exec("UPDATE User SET Email = ? WHERE UserID = ?", passenger.Email, passengerId)
 		if err2 != nil {
 			panic(err2.Error())
 		}
-		w.WriteHeader(http.StatusOK) //200
+		w.WriteHeader(http.StatusOK)
 
 		//return the updated passenger details
 		results, err := db.Query("SELECT p.FirstName, p.LastName, p.PhoneNo, u.Email, u.Password from Passenger p inner join User u on p.PassengerID = u.UserID where p.PassengerId = ?", passengerId)
@@ -159,8 +156,7 @@ func GetPassenger(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetDriver(w http.ResponseWriter, r *http.Request) {
-	// according to the driverId, retrieve the driver details from the database, and store it in LoggedInUser struct
-	// then return the struct as json
+
 
 	db, err := sql.Open("mysql", sqlDb)
 	if err != nil {
@@ -176,7 +172,7 @@ func GetDriver(w http.ResponseWriter, r *http.Request) {
 	loggedInUser.UserType = "driver"
 
 	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK) //200
+		w.WriteHeader(http.StatusOK)
 		return
 	} else if r.Method == "GET" {
 
