@@ -188,6 +188,7 @@
                     <p>No current trip</p>
                 `;}
               else {
+                localStorage.setItem('pid', trip.PassengerID);
                 currentTrip.innerHTML = `
                     <p>Start Time: ${trip.StartTime}</p>
                     <p>End Time: ${trip.EndTime}</p>
@@ -250,6 +251,8 @@
                     'Content-Type' : 'application/x-www-form-urlencoded; charset=UTF-8',
                   }
               })
+              let pid = localStorage.getItem('pid');
+              localStorage.removeItem(pid);
               window.location.reload();
             });
           }

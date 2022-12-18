@@ -94,7 +94,7 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 		}
 		defer result.Close()
 		for result.Next() {
-			err := result.Scan(&currentTrip.TripID, &currentTrip.PassengerID, &currentTrip.DriverID, &currentTrip.DriverName, &currentTrip.LicenseNo, &currentTrip.StartTime, &currentTrip.EndTime, &currentTrip.StartPostal, &currentTrip.EndPostal)
+			err := result.Scan(&currentTrip.TripID, &currentTrip.PassengerID, &currentTrip.DriverID, &currentTrip.DriverName, &currentTrip.LicenseNo, &currentTrip.StartPostal, &currentTrip.EndPostal)
 			if err != nil {
 				panic(err.Error())
 			}

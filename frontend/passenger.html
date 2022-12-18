@@ -81,7 +81,7 @@
 
     <script>
         const passengerID = sessionStorage.getItem('userID');
-        localStorage.removeItem(passengerID);
+        // localStorage.removeItem(passengerID);
         if (passengerID === null) {
             window.location.href = 'login.html';
         }
@@ -148,6 +148,8 @@
             };
 
             const passengerID = sessionStorage.getItem('userID');
+            
+
             fetch(`http://localhost:5001/api/v1/passenger/${passengerID}`, {
                 method: 'POST',
                 headers: {
@@ -176,7 +178,6 @@
         const tripRequestForm = document.getElementById('trip-form');
         tripRequestForm.addEventListener('submit', (event) => {
             event.preventDefault();
-
             const pickupLocation = document.getElementById('start-postal-code').value;
             const dropoffLocation = document.getElementById('end-postal-code').value;
             const passengerID = sessionStorage.getItem('userID');
@@ -196,11 +197,15 @@
                 .then(response => response.json())
                 .then(trip => {
 
+                  const tripForm = document.getElementById('trip-form');
+                  tripForm.style.display = 'none';
+
+
+
                     localStorage.setItem(passengerID, "true" );
                     const tripInfo = document.getElementById('trip-info');
                     tripInfo.innerHTML = `
-                        <p>Start Time: ${trip.StartTime}</p>
-                        <p>End Time: ${trip.EndTime}</p>
+
                         <p>Start Postal: ${trip.StartPostal}</p>
                         <p>End Postal: ${trip.EndPostal}</p>
                         <p>Driver Name: ${trip.DriverName}</p>
@@ -208,7 +213,8 @@
                 });
         });
 
-        if (localStorage.getItem(passengerID) === "true") {
+        const checked = localStorage.getItem(passengerID);
+        if (checked === "true") {
             const tripForm = document.getElementById('trip-form');
             tripForm.style.display = 'none';
             const tripInfo = document.getElementById('trip-info');
@@ -218,8 +224,7 @@
                 .then(response => response.json())
                 .then(trip => {
                     tripInfo.innerHTML = `
-                        <p>Start Time: ${trip.StartTime}</p>
-                        <p>End Time: ${trip.EndTime}</p>
+
                         <p>Start Postal: ${trip.StartPostal}</p>
                         <p>End Postal: ${trip.EndPostal}</p>
                         <p>Driver Name: ${trip.DriverName}</p>
